@@ -1,7 +1,5 @@
 scrrev=6
 
-setenv variant ""
-
 # SD is always bootfile mmc
 setenv sdmmc_idx 1
 
@@ -73,11 +71,15 @@ if fatload mmc ${sdmmc_idx}:1 0x90000000 switchroot/joycon_mac.bin; then
     if itest.b *0x90000000 == 0x01; then
         echo Left JoyCon is available
         host_mac_addr=0x90000007
+    else
+        echo \\e Left JoyCon pairing info is not available!
     fi
 
     if itest.b *0x9000001d == 0x02; then
         echo Right JoyCon is available
         host_mac_addr=0x90000024
+    else
+        echo \\e Right JoyCon pairing info is not available!
     fi
 fi
 
@@ -149,9 +151,10 @@ if test -n ${overlays}; then
             if test "${ov}" = "tegra210-UART-B-overlay"; then
                 # Override bootargs_extra for extra logging with UART overlay
                 setenv bootargs_extra "no_console_suspend androidboot.console=ttyS1 console=ttyS1,115200,8n1 loglevel=8"
-            else
-                
             fi
+        else
+            # Error on failure to apply
+            echo \\e failed to overlay ${ov}!; sleep 5; reset
         fi
     done
 fi
@@ -174,7 +177,7 @@ else Display is Unknown; fi
 if test -n ${DHANDLE}; then echo Setting Display panel; fdt resize 8192; fdt set /host1x@50000000/dsi nvidia,active-panel <$DHANDLE>; fi
 
 # Set common bootargs
-setenv bootargs_path "init=/init nvdec_enabled=0 usbcore.autosuspend=-1 log_buf_len=4M androidboot.bootloader=${ver_simple} androidboot.hardware=${variant} androidboot.selinux=permissive androidboot.serialno=${serial#} androidboot.modem=none pcie_aspm=off vpr_resize pmc_reboot2payload.default_payload=reboot_payload.bin pmc_reboot2payload.reboot_action=via-payload pmc_reboot2payload.hekate_config_id=SWANDR pmc_reboot2payload.enabled=1 tegra_fbmem=0x800000@0xf5a00000"
+setenv bootargs_path "init=/init nvdec_enabled=0 usbcore.autosuspend=-1 log_buf_len=4M androidboot.bootloader=${ver_simple} androidboot.hardware=nx androidboot.selinux=permissive androidboot.serialno=${serial#} androidboot.modem=none pcie_aspm=off vpr_resize pmc_reboot2payload.default_payload=reboot_payload.bin pmc_reboot2payload.reboot_action=via-payload pmc_reboot2payload.hekate_config_id=SWANDR pmc_reboot2payload.enabled=1 tegra_fbmem=0x800000@0xf5a00000"
 
 # gpio 190 = VOL_UP, 191 = VOL_DOWN
 if gpio input 190 && test ${recovery} = "0"; then
@@ -198,3 +201,10 @@ else
 
     bootm 0x98000000 0x98000000 0x8d000000
 fi
+
+echo \\e Failed to launch kernel!
+echo \\e  
+echo \\e Rebooting in 10s...
+
+sleep 10
+reset

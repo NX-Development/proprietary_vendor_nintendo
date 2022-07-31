@@ -9,21 +9,24 @@ if fatload mmc ${sdmmc_idx}:1 0x8f000000 switchroot/android/uenv.txt; then
     echo Successfully imported uenv.txt...
 fi
 
-# Check if eMMC overlay is present
-if test -n ${overlays}; then
+setenv mmc_idx 1
+
+# Check if eMMC boot is enabled
+if test -n ${emmc}; then
+    setenv mmc_idx 0
+    echo eMMC boot enabled!
+# Keep overlay check for compat
+elif test -n ${overlays}; then
     for ov in ${overlays}; do
         if test "${ov}" = "tegra210-icosa_emmc-overlay"; then
-            echo variant: icosa_emmc
-            setenv variant icosa_emmc
             setenv mmc_idx 0
+            setenv emmc 1
+            echo eMMC boot enabled!
+            echo \\e eMMC boot overlay no longer needed--switch to just setting emmc=1 in uenv.txt
         fi
     done
-fi
-
-if test "${variant}" != "icosa_emmc"; then
-    echo variant: icosa
-    setenv variant icosa
-    setenv mmc_idx 1
+else
+    echo SD boot enabled!
 fi
 
 mmc dev $mmc_idx
@@ -139,6 +142,12 @@ part size mmc $mmc_idx DTB dtb_part_size
 mmc read $fdt_addr_r $dtb_part_start $dtb_part_size
 
 fdt addr $fdt_addr_r
+
+# Patch DT on eMMC boot
+if test -n ${emmc}; then
+    fdt set /sdhci@700b0600 status okay
+    fdt set /firmware/android boot_devices sdhci-tegra.3,sdhci-tegra.0
+fi
 
 # Load overlays based on uenv.txt 
 if test -n ${overlays}; then

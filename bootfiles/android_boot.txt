@@ -143,12 +143,6 @@ mmc read $fdt_addr_r $dtb_part_start $dtb_part_size
 
 fdt addr $fdt_addr_r
 
-# Patch DT on eMMC boot
-if test -n ${emmc}; then
-    fdt set /sdhci@700b0600 status okay
-    fdt set /firmware/android boot_devices sdhci-tegra.3,sdhci-tegra.0
-fi
-
 # Load overlays based on uenv.txt 
 if test -n ${overlays}; then
     for ov in ${overlays}; do
@@ -166,6 +160,14 @@ if test -n ${overlays}; then
             echo \\e failed to overlay ${ov}!; sleep 5; reset
         fi
     done
+fi
+
+# Patch DT on eMMC boot
+if test -n ${emmc}; then
+    fdt set /sdhci@700b0600 status okay
+    setenv bootargs_extra "${bootargs_extra} androidboot.boot_devices=sdhci-tegra.3"
+else
+    setenv bootargs_extra "${bootargs_extra} androidboot.boot_devices=sdhci-tegra.0"
 fi
 
 # insert mac address dtb node

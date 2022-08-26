@@ -188,7 +188,7 @@ else Display is Unknown; fi
 if test -n ${DHANDLE}; then echo Setting Display panel; fdt resize 8192; fdt set /host1x@50000000/dsi nvidia,active-panel <$DHANDLE>; fi
 
 # Set common bootargs
-setenv bootargs_path "init=/init nvdec_enabled=0 usbcore.autosuspend=-1 log_buf_len=4M androidboot.bootloader=${ver_simple} androidboot.hardware=nx androidboot.selinux=permissive androidboot.serialno=${serial#} androidboot.modem=none pcie_aspm=off vpr_resize pmc_reboot2payload.default_payload=reboot_payload.bin pmc_reboot2payload.reboot_action=via-payload pmc_reboot2payload.hekate_config_id=SWANDR pmc_reboot2payload.enabled=1 tegra_fbmem=0x800000@0xf5a00000"
+setenv bootargs_path "init=/init nvdec_enabled=0 usbcore.autosuspend=-1 log_buf_len=4M androidboot.bootloader=${ver_simple} androidboot.hardware=nx androidboot.hardware.sku=icosa androidboot.selinux=permissive androidboot.serialno=${serial#} androidboot.modem=none pcie_aspm=off vpr_resize pmc_reboot2payload.default_payload=reboot_payload.bin pmc_reboot2payload.reboot_action=via-payload pmc_reboot2payload.hekate_config_id=SWANDR pmc_reboot2payload.enabled=1 tegra_fbmem=0x800000@0xf5a00000"
 
 # gpio 190 = VOL_UP, 191 = VOL_DOWN
 if gpio input 190 && test ${recovery} = "0"; then

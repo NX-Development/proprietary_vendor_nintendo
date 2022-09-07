@@ -58,9 +58,6 @@ setenv fastboot_partition_alias_dtb DTB
 # load fastboot first so 'fastboot continue' works
 gpio input 191 || fastboot 0
 
-# store main MMC serial number to use as device serial
-mmc info serial#
-
 # generate a uboot version we can assert against in recovery
 setexpr ver_simple gsub "U-Boot (.*) \\(.*\\)" "\\1-rev$scrrev" "$ver"
 
@@ -83,68 +80,75 @@ setexpr app_part_num_dec gsub "^0xe$" 14 $app_part_num
 setexpr app_part_num_dec gsub "^0xf$" 15 $app_part_num
 setexpr app_part_num_dec gsub "^0x10$" 16 $app_part_num
 
-host_mac_addr=0xff
-
-# load mac address info file
-if fatload mmc ${sdmmc_idx}:1 0x90000000 switchroot/joycon_mac.bin; then
-    if itest.b *0x90000000 == 0x01; then
-        echo Left JoyCon is available
-        host_mac_addr=0x90000007
-    else
-        echo \\e Left JoyCon pairing info is not available!
-    fi
-
-    if itest.b *0x9000001d == 0x02; then
-        echo Right JoyCon is available
-        host_mac_addr=0x90000024
-    else
-        echo \\e Right JoyCon pairing info is not available!
-    fi
-fi
-
-if itest $host_mac_addr == 0xff; then
-    echo No JoyCons available
-
-    # write to a known good location
-    mw.q 0x90000000 ${serial#} 1
-
-    # write crc32 of value at offset 0x3
-    crc32 0x90000000 8 0x90000003
-
-    # write nintendo prefix
-    mw.b 0x90000000 0x98 1
-    mw.b 0x90000001 0xE8 1
-    mw.b 0x90000002 0xFA 1
-
-    # use this to generate mac
-    host_mac_addr=0x90000000
-fi
-
-bt_mac=""
-sep=""
-for i in 0 1 2 3 4 5 ; do
-    setexpr x $host_mac_addr + $i
-    setexpr.b b *$x
-    if itest $b <= f; then
-        # There is no way to have leading zeros, so do this hack
-        bt_mac="$bt_mac${sep}0$b"
-    else
-        bt_mac="$bt_mac$sep$b"
-    fi
-    sep=":"
-done
-
-# FIXME after hekate gets wifi mac reading
-setexpr.b last_byte *0x90000005
-if itest $last_byte == 0xFF; then
-    # wrap around case
-    setexpr wifi_mac gsub "(.*:.*:.*:.*:.*:).*" "\\100" $bt_mac
+if test -n ${device_bt_mac}; then
+    bt_mac=${device_bt_mac}
 else
-    setexpr.b wb $last_byte + 1
-    if itest $wb <= f; then
-        setexpr wifi_mac gsub "(.*:.*:.*:.*:.*:).*" "\\10$wb" $bt_mac
+    host_mac_addr=0xff
+
+    # load mac address info file
+    if fatload mmc ${sdmmc_idx}:1 0x90000000 switchroot/joycon_mac.bin; then
+        if itest.b *0x90000000 == 0x01; then
+            echo Left JoyCon is available
+            host_mac_addr=0x90000007
+        else
+            echo \\e Left JoyCon pairing info is not available!
+        fi
+
+        if itest.b *0x9000001d == 0x02; then
+            echo Right JoyCon is available
+            host_mac_addr=0x90000024
+        else
+            echo \\e Right JoyCon pairing info is not available!
+        fi
+    fi
+
+    if itest $host_mac_addr == 0xff; then
+        echo No JoyCons available
+
+        # write to a known good location
+        mw.q 0x90000000 ${device_serial} 1
+
+        # write crc32 of value at offset 0x3
+        crc32 0x90000000 8 0x90000003
+
+        # write nintendo prefix
+        mw.b 0x90000000 0x98 1
+        mw.b 0x90000001 0xE8 1
+        mw.b 0x90000002 0xFA 1
+
+        # use this to generate mac
+        host_mac_addr=0x90000000
+    fi
+
+    bt_mac=""
+    sep=""
+    for i in 0 1 2 3 4 5 ; do
+        setexpr x $host_mac_addr + $i
+        setexpr.b b *$x
+        if itest $b <= f; then
+            # There is no way to have leading zeros, so do this hack
+            bt_mac="$bt_mac${sep}0$b"
+        else
+            bt_mac="$bt_mac$sep$b"
+        fi
+        sep=":"
+    done
+fi
+
+if test -n ${device_wifi_mac}; then
+    wifi_mac=${device_wifi_mac}
+else
+    setexpr.b last_byte *0x90000005
+    if itest $last_byte == 0xFF; then
+        # wrap around case
+        setexpr wifi_mac gsub "(.*:.*:.*:.*:.*:).*" "\\100" $bt_mac
     else
-        setexpr wifi_mac gsub "(.*:.*:.*:.*:.*:).*" "\\1$wb" $bt_mac
+        setexpr.b wb $last_byte + 1
+        if itest $wb <= f; then
+            setexpr wifi_mac gsub "(.*:.*:.*:.*:.*:).*" "\\10$wb" $bt_mac
+        else
+            setexpr wifi_mac gsub "(.*:.*:.*:.*:.*:).*" "\\1$wb" $bt_mac
+        fi
     fi
 fi
 
@@ -210,7 +214,7 @@ if test -n ${DHANDLE}; then echo Setting Display panel; fdt resize 8192; fdt set
 
 # Set common bootargs
 setenv bootargs_path "init=/init nvdec_enabled=0 usbcore.autosuspend=-1 log_buf_len=4M androidboot.bootloader=${ver_simple} androidboot.hardware=nx \
-                      androidboot.hardware.sku=${hw_sku} androidboot.selinux=permissive androidboot.serialno=${serial#} androidboot.modem=none \
+                      androidboot.hardware.sku=${hw_sku} androidboot.selinux=permissive androidboot.serialno=${device_serial} androidboot.modem=none \
                       pcie_aspm=off vpr_resize pmc_r2p.enabled=1 pmc_r2p.action=${r2p_reboot_action} pmc_r2p.entry_id=${hekate_id} \
                       pmc_r2p.param1=${r2p_param1} pmc_r2p.param1=${r2p_param2} tegra_fbmem=0x800000@0xf5a00000"
 

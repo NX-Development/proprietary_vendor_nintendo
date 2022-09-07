@@ -16,12 +16,6 @@ echo WF MAC: ${device_wifi_mac}
 # SD is always bootfile mmc
 setenv sdmmc_idx 1
 
-# Load uenv.txt
-if fatload mmc ${sdmmc_idx}:1 0x8f000000 switchroot/android/uenv.txt; then
-	env import -t 0x8f000000 ${filesize};
-    echo Successfully imported uenv.txt...
-fi
-
 setenv mmc_idx 1
 
 # Check if eMMC boot is enabled

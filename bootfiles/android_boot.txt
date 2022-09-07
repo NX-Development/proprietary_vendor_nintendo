@@ -1,4 +1,4 @@
-scrrev=6
+scrrev=7
 
 # Set SoC/SKU info.
 if test ${t210b01} = 1; then setenv plat_info T210B01; else setenv plat_info T210; fi

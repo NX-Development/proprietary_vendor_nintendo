@@ -1,5 +1,18 @@
 scrrev=6
 
+# Set SoC/SKU info.
+if test ${t210b01} = 1; then setenv plat_info T210B01; else setenv plat_info T210; fi
+if   test ${sku} = 0; then setenv hw_sku icosa
+elif test ${sku} = 1; then setenv hw_sku iowa
+elif test ${sku} = 2; then setenv hw_sku hoag
+elif test ${sku} = 3; then setenv hw_sku aula; fi
+
+# Print platform info.
+echo PLAT:   ${plat_info} SKU: ${hw_sku}
+echo Serial: ${device_serial}
+echo BT MAC: ${device_bt_mac}
+echo WF MAC: ${device_wifi_mac}
+
 # SD is always bootfile mmc
 setenv sdmmc_idx 1
 
@@ -188,7 +201,7 @@ else Display is Unknown; fi
 if test -n ${DHANDLE}; then echo Setting Display panel; fdt resize 8192; fdt set /host1x@50000000/dsi nvidia,active-panel <$DHANDLE>; fi
 
 # Set common bootargs
-setenv bootargs_path "init=/init nvdec_enabled=0 usbcore.autosuspend=-1 log_buf_len=4M androidboot.bootloader=${ver_simple} androidboot.hardware=nx androidboot.selinux=permissive androidboot.serialno=${serial#} androidboot.modem=none pcie_aspm=off vpr_resize pmc_reboot2payload.default_payload=reboot_payload.bin pmc_reboot2payload.reboot_action=via-payload pmc_reboot2payload.hekate_config_id=SWANDR pmc_reboot2payload.enabled=1 tegra_fbmem=0x800000@0xf5a00000"
+setenv bootargs_path "init=/init nvdec_enabled=0 usbcore.autosuspend=-1 log_buf_len=4M androidboot.bootloader=${ver_simple} androidboot.hardware=nx androidboot.hardware.sku=${hw_sku} androidboot.selinux=permissive androidboot.serialno=${serial#} androidboot.modem=none pcie_aspm=off vpr_resize pmc_reboot2payload.default_payload=reboot_payload.bin pmc_reboot2payload.reboot_action=via-payload pmc_reboot2payload.hekate_config_id=SWANDR pmc_reboot2payload.enabled=1 tegra_fbmem=0x800000@0xf5a00000"
 
 # gpio 190 = VOL_UP, 191 = VOL_DOWN
 if gpio input 190 && test ${recovery} = "0"; then

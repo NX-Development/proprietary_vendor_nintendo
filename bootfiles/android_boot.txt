@@ -6,6 +6,9 @@ setenv r2p_reboot_action bootloader
 setenv r2p_param1 0
 setenv r2p_param2 0
 
+# Set kernel load address
+setenv kernload 0xA0000000
+
 # Set SoC/SKU info.
 if test ${t210b01} = 1; then setenv plat_info T210B01; else setenv plat_info T210; fi
 if   test ${sku} = 0; then setenv hw_sku icosa
@@ -214,26 +217,22 @@ setenv bootargs_path "init=/init nvdec_enabled=0 usbcore.autosuspend=-1 log_buf_
 # gpio 190 = VOL_UP, 191 = VOL_DOWN
 if gpio input 190 && test ${recovery} = "0"; then
     # normal boot
-    part start mmc ${mmc_idx} LNX root_part_start
-    part size mmc ${mmc_idx} LNX root_part_size
+    part start mmc ${mmc_idx} LNX kernel_part_start
+    part size mmc ${mmc_idx} LNX kernel_part_size
 
     setenv bootargs "${bootargs_extra} ${bootargs_path} skip_initramfs ro rootwait root=/dev/mmcblk0p${app_part_num_dec} firmware_class.path=/vendor/firmware \
     bluetooth.disable_ertm=1 "
- 
-    mmc read 0x98000000 $root_part_start $root_part_size
-
-    bootm 0x98000000 0x98000000 0x8d000000
 else
     # recovery
-    part start mmc ${mmc_idx} SOS root_part_start
-    part size mmc ${mmc_idx} SOS root_part_size
+    part start mmc ${mmc_idx} SOS kernel_part_start
+    part size mmc ${mmc_idx} SOS kernel_part_size
 
     setenv bootargs "${bootargs_extra} ${bootargs_path} firmware_class.path=/etc/firmware "
-        
-    mmc read 0x98000000 $root_part_start $root_part_size
-
-    bootm 0x98000000 0x98000000 0x8d000000
 fi
+
+mmc read ${kernload} ${kernel_part_start} ${kernel_part_size}
+
+bootm ${kernload} ${kerneload} ${fdt_addr_r}
 
 echo \\e Failed to launch kernel!
 echo \\e  

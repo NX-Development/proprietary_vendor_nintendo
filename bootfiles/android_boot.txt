@@ -1,5 +1,11 @@
 scrrev=7
 
+# Set r2p params
+setenv hekate_id SWANDR
+setenv r2p_reboot_action bootloader
+setenv r2p_param1 0
+setenv r2p_param2 0
+
 # Set SoC/SKU info.
 if test ${t210b01} = 1; then setenv plat_info T210B01; else setenv plat_info T210; fi
 if   test ${sku} = 0; then setenv hw_sku icosa
@@ -200,7 +206,10 @@ else echoe Unknown Display ID: ${display_id}!; fi
 if test -n ${DHANDLE}; then echo Setting Display panel; fdt resize 8192; fdt set /host1x@50000000/dsi nvidia,active-panel <$DHANDLE>; fi
 
 # Set common bootargs
-setenv bootargs_path "init=/init nvdec_enabled=0 usbcore.autosuspend=-1 log_buf_len=4M androidboot.bootloader=${ver_simple} androidboot.hardware=nx androidboot.hardware.sku=${hw_sku} androidboot.selinux=permissive androidboot.serialno=${serial#} androidboot.modem=none pcie_aspm=off vpr_resize pmc_reboot2payload.default_payload=reboot_payload.bin pmc_reboot2payload.reboot_action=via-payload pmc_reboot2payload.hekate_config_id=SWANDR pmc_reboot2payload.enabled=1 tegra_fbmem=0x800000@0xf5a00000"
+setenv bootargs_path "init=/init nvdec_enabled=0 usbcore.autosuspend=-1 log_buf_len=4M androidboot.bootloader=${ver_simple} androidboot.hardware=nx \
+                      androidboot.hardware.sku=${hw_sku} androidboot.selinux=permissive androidboot.serialno=${serial#} androidboot.modem=none \
+                      pcie_aspm=off vpr_resize pmc_r2p.enabled=1 pmc_r2p.action=${r2p_reboot_action} pmc_r2p.entry_id=${hekate_id} \
+                      pmc_r2p.param1=${r2p_param1} pmc_r2p.param1=${r2p_param2} tegra_fbmem=0x800000@0xf5a00000"
 
 # gpio 190 = VOL_UP, 191 = VOL_DOWN
 if gpio input 190 && test ${recovery} = "0"; then
@@ -208,7 +217,8 @@ if gpio input 190 && test ${recovery} = "0"; then
     part start mmc ${mmc_idx} LNX root_part_start
     part size mmc ${mmc_idx} LNX root_part_size
 
-    setenv bootargs "${bootargs_extra} ${bootargs_path} skip_initramfs ro rootwait root=/dev/mmcblk0p${app_part_num_dec} firmware_class.path=/vendor/firmware bluetooth.disable_ertm=1 "
+    setenv bootargs "${bootargs_extra} ${bootargs_path} skip_initramfs ro rootwait root=/dev/mmcblk0p${app_part_num_dec} firmware_class.path=/vendor/firmware \
+    bluetooth.disable_ertm=1 "
  
     mmc read 0x98000000 $root_part_start $root_part_size
 

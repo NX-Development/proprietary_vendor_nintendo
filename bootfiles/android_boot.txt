@@ -38,7 +38,7 @@ elif test -n ${overlays}; then
             setenv mmc_idx 0
             setenv emmc 1
             echo eMMC boot enabled!
-            echo \\e eMMC boot overlay no longer needed--switch to just setting emmc=1 in uenv.txt
+            echoe eMMC boot overlay no longer needed--switch to just setting emmc=1 in uenv.txt
         fi
     done
 else
@@ -91,14 +91,14 @@ else
             echo Left JoyCon is available
             host_mac_addr=0x90000007
         else
-            echo \\e Left JoyCon pairing info is not available!
+            echoe Left JoyCon pairing info is not available!
         fi
 
         if itest.b *0x9000001d == 0x02; then
             echo Right JoyCon is available
             host_mac_addr=0x90000024
         else
-            echo \\e Right JoyCon pairing info is not available!
+            echoe Right JoyCon pairing info is not available!
         fi
     fi
 
@@ -177,7 +177,7 @@ if test -n ${overlays}; then
             fi
         else
             # Error on failure to apply
-            echo \\e failed to overlay ${ov}!; sleep 5; reset
+            echoe failed to overlay ${ov}!; sleep 5; reset
         fi
     done
 fi
@@ -238,9 +238,9 @@ mmc read ${kernload} ${kernel_part_start} ${kernel_part_size}
 
 bootm ${kernload} ${kerneload} ${fdt_addr_r}
 
-echo \\e Failed to launch kernel!
-echo \\e  
-echo \\e Rebooting in 10s...
+echoe Failed to launch kernel!
+echoe  
+echoe Rebooting in 10s...
 
 sleep 10
 reset

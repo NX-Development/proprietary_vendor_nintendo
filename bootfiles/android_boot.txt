@@ -94,46 +94,32 @@ setexpr app_part_num_dec gsub "^0xe$" 14 $app_part_num
 setexpr app_part_num_dec gsub "^0xf$" 15 $app_part_num
 setexpr app_part_num_dec gsub "^0x10$" 16 $app_part_num
 
-if test -n ${device_bt_mac}; then
-    bt_mac=${device_bt_mac}
+# Set default macs, to be overridden by joycons
+if test -n ${device_bt_mac};   then bt_mac=${device_bt_mac}; fi
+if test -n ${device_wifi_mac}; then wifi_mac=${device_wifi_mac}; fi
+
+host_mac_addr=0xff
+
+# load mac address info file
+if fatload mmc ${sdmmc_idx}:1 0x90000000 switchroot/joycon_mac.bin; then
+    if itest.b *0x90000000 == 0x01; then
+        echo Left JoyCon is available
+        host_mac_addr=0x90000007
+    else
+        echoe Left JoyCon pairing info is not available!
+    fi
+
+    if itest.b *0x9000001d == 0x02; then
+        echo Right JoyCon is available
+        host_mac_addr=0x90000024
+    else
+        echoe Right JoyCon pairing info is not available!
+    fi
+fi
+
+if itest $host_mac_addr == 0xff; then
+    echo No JoyCons available
 else
-    host_mac_addr=0xff
-
-    # load mac address info file
-    if fatload mmc ${sdmmc_idx}:1 0x90000000 switchroot/joycon_mac.bin; then
-        if itest.b *0x90000000 == 0x01; then
-            echo Left JoyCon is available
-            host_mac_addr=0x90000007
-        else
-            echoe Left JoyCon pairing info is not available!
-        fi
-
-        if itest.b *0x9000001d == 0x02; then
-            echo Right JoyCon is available
-            host_mac_addr=0x90000024
-        else
-            echoe Right JoyCon pairing info is not available!
-        fi
-    fi
-
-    if itest $host_mac_addr == 0xff; then
-        echo No JoyCons available
-
-        # write to a known good location
-        mw.q 0x90000000 ${device_serial} 1
-
-        # write crc32 of value at offset 0x3
-        crc32 0x90000000 8 0x90000003
-
-        # write nintendo prefix
-        mw.b 0x90000000 0x98 1
-        mw.b 0x90000001 0xE8 1
-        mw.b 0x90000002 0xFA 1
-
-        # use this to generate mac
-        host_mac_addr=0x90000000
-    fi
-
     bt_mac=""
     sep=""
     for i in 0 1 2 3 4 5 ; do
@@ -147,11 +133,7 @@ else
         fi
         sep=":"
     done
-fi
 
-if test -n ${device_wifi_mac}; then
-    wifi_mac=${device_wifi_mac}
-else
     setexpr.b last_byte *0x90000005
     if itest $last_byte == 0xFF; then
         # wrap around case

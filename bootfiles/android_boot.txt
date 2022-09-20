@@ -213,10 +213,6 @@ fi
 fdt set /chosen nvidia,wifi-mac ${wifi_mac}
 fdt set /chosen nvidia,bluetooth-mac ${bt_mac}
 
-# Prepare display panel id from Nyx.
-cp.b 0xED838002 0xED838001 0x1
-mw.b 0xED838002 0x0 0x1
-
 # Get display panel handle.
 if   test ${display_id} = f20;  then echo Display is INN 6.2; fdt get value DHANDLE /host1x/dsi/panel-i-720p-6-2 phandle
 elif test ${display_id} = f30;  then echo Display is AUO 6.2; fdt get value DHANDLE /host1x/dsi/panel-a-720p-6-2 phandle

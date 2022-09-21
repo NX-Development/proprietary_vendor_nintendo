@@ -227,6 +227,13 @@ else echoe Unknown Display ID: ${display_id}!; fi
 # Set new active display panel handle.
 if test -n ${DHANDLE}; then echo Setting Display panel; fdt resize 8192; fdt set /host1x@50000000/dsi nvidia,active-panel <$DHANDLE>; fi
 
+# Set battery voltage limit via cell age for Vali.
+if test ${sku} = 2 -a test -n ${VLIM}; then
+	fdt set /i2c@7000c000/battery-charger@6b/charger ti,charge-voltage-limit-millivolt <0x$VLIM>
+	fdt set /i2c@7000c000/battery-charger@6b/charger ti,charge-thermal-voltage-limit <0x$VLIM 0x$VLIM 0x$VLIM 0xFF0>
+	fdt set /i2c@7000c000/battery-gauge@36 maxim,kernel-maximum-soc <0x$SOCLIM>
+fi
+
 # Set common bootargs
 setenv bootargs_path "{bootargs_extra} init=/init nvdec_enabled=0 usbcore.autosuspend=-1 log_buf_len=4M androidboot.bootloader=${ver_simple} androidboot.hardware=nx \
                       androidboot.hardware.sku=${hw_sku} androidboot.selinux=permissive androidboot.serialno=${device_serial} androidboot.modem=none \

@@ -94,6 +94,21 @@ setexpr app_part_num_dec gsub "^0xe$" 14 $app_part_num
 setexpr app_part_num_dec gsub "^0xf$" 15 $app_part_num
 setexpr app_part_num_dec gsub "^0x10$" 16 $app_part_num
 
+# load dtb
+part start mmc $mmc_idx DTB dtb_part_start
+part size mmc $mmc_idx DTB dtb_part_size
+
+# Load DT img.
+if load mmc ${mmc_idx}:${distro_bootpart} ${fdtrload} ${boot_dir}/nx-plat.dtimg; then echo Device Tree Image loaded
+else echoe Device Tree Image read failed!; echoe Rebooting in 10s..; sleep 10; reset; fi
+
+# Get DT from image. If failed, reset.
+if dtimg load ${fdtrload} ${sku} ${fdtraddr} fdtrsize ${sku}; then echo Device Tree for SKU ${sku_info} loaded
+else echoe Device Tree load for SKU ${sku_info} failed!; echoe Rebooting in 10s..; sleep 10; reset; fi
+
+# Set dtb address and size from above.
+fdt addr ${fdtraddr} ${fdtrsize}
+
 # Set default macs, to be overridden by joycons
 if test -n ${device_bt_mac};   then bt_mac=${device_bt_mac}; fi
 if test -n ${device_wifi_mac}; then wifi_mac=${device_wifi_mac}; fi
@@ -177,14 +192,6 @@ fi
 
 # Set androidboot console arg
 setenv bootargs_extra "${bootargs_extra} androidboot.console=${androidcon}"
-
-# load dtb
-part start mmc $mmc_idx DTB dtb_part_start
-part size mmc $mmc_idx DTB dtb_part_size
-
-mmc read $fdt_addr_r $dtb_part_start $dtb_part_size
-
-fdt addr $fdt_addr_r
 
 # Load overlays from env
 fdt resize 16384

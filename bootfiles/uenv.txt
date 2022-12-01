@@ -1,7 +1,0 @@
-# This is uenv.txt, your one-stop-shop to customize your boot process
-
-# Uncomment to enable eMMC boot (NOT RECOMMENDED--consult guide first)
-# emmc=1
-
-# Uncomment to enable UART logging via right JoyCon rail or add more comma-separated overlays to apply
-# overlays=tegra210-UART-B-overlay
